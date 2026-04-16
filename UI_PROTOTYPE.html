@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Twitch VOD Chat Archive</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #8b5cf6;
+            --primary-dark: #6d28d9;
+            --secondary: #06b6d4;
+            --accent: #ec4899;
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --bg-input: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --border: #475569;
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1a1f35 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* HEADER */
+        header {
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.5px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .user-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg-card);
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .user-badge img {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+        }
+
+        /* NAVIGATION TABS */
+        .nav-tabs {
+            display: flex;
+            gap: 0;
+            border-bottom: 1px solid var(--border);
+            padding: 0 2rem;
+            background: rgba(15, 23, 42, 0.5);
+        }
+
+        .nav-tab {
+            padding: 1rem 1.5rem;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 500;
+            position: relative;
+            transition: color 0.2s;
+        }
+
+        .nav-tab:hover {
+            color: var(--text-primary);
+        }
+
+        .nav-tab.active {
+            color: var(--primary);
+        }
+
+        .nav-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+        }
+
+        /* MAIN CONTENT */
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem;
+        }
+
+        .page {
+            display: none;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* LOGIN PAGE */
+        .login-container {
+            max-width: 500px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            text-align: center;
+            gap: 2rem;
+        }
+
+        .login-icon {
+            font-size: 4rem;
+            opacity: 0.9;
+        }
+
+        .login-container h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            letter-spacing: -1px;
+        }
+
+        .login-container p {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        .btn-twitch {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem 2rem;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border: none;
+            border-radius: 0.5rem;
+            color: white;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.3);
+        }
+
+        .btn-twitch:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 30px rgba(139, 92, 246, 0.4);
+        }
+
+        /* VOD SELECTOR PAGE */
+        .vod-controls {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            align-items: center;
+        }
+
+        .search-input {
+            flex: 1;
+            max-width: 400px;
+            padding: 0.75rem 1rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            color: var(--text-primary);
+            font-size: 0.95rem;
+        }
+
+        .search-input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .btn-primary {
+            padding: 0.75rem 1.5rem;
+            background: var(--primary);
+            border: none;
+            border-radius: 0.5rem;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        .vod-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .vod-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            overflow: hidden;
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .vod-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(139, 92, 246, 0.2);
+        }
+
+        .vod-thumbnail {
+            width: 100%;
+            height: 180px;
+            background: linear-gradient(135deg, #1e293b, #334155);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: var(--text-secondary);
+            position: relative;
+        }
+
+        .vod-card.selected .vod-thumbnail::before {
+            content: '✓';
+            position: absolute;
+            width: 36px;
+            height: 36px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            top: 10px;
+            right: 10px;
+            font-weight: 700;
+        }
+
+        .vod-info {
+            padding: 1rem;
+        }
+
+        .vod-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        .vod-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .checkbox {
+            display: none;
+        }
+
+        .select-count {
+            background: var(--bg-card);
+            padding: 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* CHAT VIEWER PAGE */
+        .chat-layout {
+            display: grid;
+            grid-template-columns: 1fr 3fr 320px;
+            gap: 1.5rem;
+            height: 100%;
+        }
+
+        .chat-sidebar {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+
+        .sidebar-section {
+            margin-bottom: 1.5rem;
+        }
+
+        .sidebar-title {
+            font-weight: 700;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 0.75rem;
+            letter-spacing: 0.5px;
+        }
+
+        .filter-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem;
+            margin-bottom: 0.5rem;
+            border-radius: 0.35rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .filter-item:hover {
+            background: var(--bg-input);
+        }
+
+        .filter-item.active {
+            color: var(--primary);
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .chat-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-search {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .chat-search input {
+            flex: 1;
+            padding: 0.75rem;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: 0.35rem;
+            color: var(--text-primary);
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+        }
+
+        .message {
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            border-left: 2px solid var(--border);
+            transition: all 0.2s;
+        }
+
+        .message:hover {
+            border-left-color: var(--primary);
+            background: rgba(139, 92, 246, 0.05);
+        }
+
+        .message-header {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.35rem;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .username {
+            font-weight: 700;
+            color: var(--secondary);
+        }
+
+        .timestamp {
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+
+        .vod-badge {
+            display: inline-block;
+            padding: 0.2rem 0.5rem;
+            background: var(--accent);
+            color: white;
+            border-radius: 0.25rem;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .message-text {
+            color: var(--text-secondary);
+            line-height: 1.4;
+            word-break: break-word;
+        }
+
+        .stats-panel {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            overflow-y: auto;
+        }
+
+        .stat-item {
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .stat-value {
+            font-size: 1.75rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--bg-input);
+            border-radius: 3px;
+            margin-top: 0.5rem;
+            overflow: hidden;
+        }
+
+        .stat-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+        }
+
+        /* SCROLLBAR */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-secondary);
+        }
+
+        /* LOADING STATE */
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-secondary);
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--border);
+            border-top: 2px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 1440px) {
+            .chat-layout {
+                grid-template-columns: 1fr 3fr;
+            }
+            .stats-panel {
+                display: none;
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .chat-layout {
+                grid-template-columns: 1fr;
+            }
+            .chat-sidebar {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- HEADER -->
+        <header>
+            <div class="logo">🎬 VodArchive</div>
+            <div class="header-actions">
+                <div class="user-badge" id="userBadge" style="display: none;">
+                    <img src="https://via.placeholder.com/32/8b5cf6/ffffff?text=U" alt="User">
+                    <span id="userName">User</span>
+                </div>
+                <button class="btn-primary" id="logoutBtn" style="display: none;">Logout</button>
+            </div>
+        </header>
+
+        <!-- NAVIGATION -->
+        <div class="nav-tabs" id="navTabs" style="display: none;">
+            <button class="nav-tab active" onclick="switchPage('vods')">My VODs</button>
+            <button class="nav-tab" onclick="switchPage('chat')">Chat Archive</button>
+        </div>
+
+        <!-- CONTENT -->
+        <div class="content">
+            <!-- LOGIN PAGE -->
+            <div id="loginPage" class="page active">
+                <div class="login-container">
+                    <div class="login-icon">📺</div>
+                    <h1>VodArchive</h1>
+                    <p>Download and search Twitch chat from all your VODs in one place. Local, fast, and powerful.</p>
+                    <button class="btn-twitch" onclick="login()">
+                        <span>💜</span>
+                        <span>Login with Twitch</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- VOD SELECTOR PAGE -->
+            <div id="vodsPage" class="page">
+                <div class="select-count">
+                    <span><strong id="selectedCount">0</strong> VOD(s) selected</span>
+                    <button class="btn-primary" onclick="downloadChat()">Download Chat</button>
+                </div>
+
+                <div class="vod-controls">
+                    <input type="text" class="search-input" placeholder="Search VODs..." id="vodSearch">
+                    <button class="btn-primary" onclick="refreshVODs()">Refresh</button>
+                </div>
+
+                <div class="vod-grid" id="vodGrid">
+                    <!-- Sample VOD cards -->
+                    <div class="vod-card" onclick="toggleVOD(this)">
+                        <div class="vod-thumbnail">🎮</div>
+                        <div class="vod-info">
+                            <div class="vod-title">Epic Gaming Session - Best Moments</div>
+                            <div class="vod-meta">
+                                <span>2 hours</span>
+                                <span>5.2K views</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="vod-card" onclick="toggleVOD(this)">
+                        <div class="vod-thumbnail">🎯</div>
+                        <div class="vod-info">
+                            <div class="vod-title">Tournament Finals - Highlight Reel</div>
+                            <div class="vod-meta">
+                                <span>4 hours</span>
+                                <span>12.8K views</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="vod-card" onclick="toggleVOD(this)">
+                        <div class="vod-thumbnail">🎪</div>
+                        <div class="vod-info">
+                            <div class="vod-title">Community Game Night Live</div>
+                            <div class="vod-meta">
+                                <span>3 hours</span>
+                                <span>8.4K views</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="vod-card" onclick="toggleVOD(this)">
+                        <div class="vod-thumbnail">🎨</div>
+                        <div class="vod-info">
+                            <div class="vod-title">Creative Showcase - Art Stream</div>
+                            <div class="vod-meta">
+                                <span>2.5 hours</span>
+                                <span>3.1K views</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="vod-card" onclick="toggleVOD(this)">
+                        <div class="vod-thumbnail">🏆</div>
+                        <div class="vod-info">
+                            <div class="vod-title">Championship Gameplay - Full Run</div>
+                            <div class="vod-meta">
+                                <span>5 hours</span>
+                                <span>15.7K views</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="vod-card" onclick="toggleVOD(this)">
+                        <div class="vod-thumbnail">🎬</div>
+                        <div class="vod-info">
+                            <div class="vod-title">Behind the Scenes Q&A</div>
+                            <div class="vod-meta">
+                                <span>1.5 hours</span>
+                                <span>2.9K views</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHAT VIEWER PAGE -->
+            <div id="chatPage" class="page">
+                <div class="chat-layout">
+                    <!-- Left Sidebar: Filters -->
+                    <div class="chat-sidebar">
+                        <div class="sidebar-section">
+                            <div class="sidebar-title">VODs</div>
+                            <div class="filter-item active" onclick="filterChat('all')">All VODs</div>
+                            <div class="filter-item" onclick="filterChat('epic')">Epic Gaming Session</div>
+                            <div class="filter-item" onclick="filterChat('tournament')">Tournament Finals</div>
+                            <div class="filter-item" onclick="filterChat('gamenight')">Game Night</div>
+                        </div>
+
+                        <div class="sidebar-section">
+                            <div class="sidebar-title">Sort By</div>
+                            <div class="filter-item active" onclick="sortChat('newest')">Newest First</div>
+                            <div class="filter-item" onclick="sortChat('oldest')">Oldest First</div>
+                            <div class="filter-item" onclick="sortChat('username')">Username</div>
+                        </div>
+
+                        <div class="sidebar-section">
+                            <div class="sidebar-title">Quick Export</div>
+                            <button class="btn-primary" style="width: 100%; margin-top: 0.5rem;">CSV</button>
+                            <button class="btn-primary" style="width: 100%; margin-top: 0.5rem;">JSON</button>
+                        </div>
+                    </div>
+
+                    <!-- Center: Chat Messages -->
+                    <div class="chat-container">
+                        <div class="chat-search">
+                            <input type="text" placeholder="Search messages by username or keyword..." id="chatSearch">
+                            <button class="btn-primary">Search</button>
+                        </div>
+                        <div class="chat-messages" id="chatMessages">
+                            <div class="message">
+                                <div class="message-header">
+                                    <span class="username">StreamLegend92</span>
+                                    <span class="timestamp">14:32:45</span>
+                                    <span class="vod-badge">Epic Gaming</span>
+                                </div>
+                                <div class="message-text">This game is insane! The graphics are absolutely wild</div>
+                            </div>
+
+                            <div class="message">
+                                <div class="message-header">
+                                    <span class="username">ChatMaster</span>
+                                    <span class="timestamp">14:33:12</span>
+                                    <span class="vod-badge">Epic Gaming</span>
+                                </div>
+                                <div class="message-text">@StreamLegend92 right?? I've never seen anything like it</div>
+                            </div>
+
+                            <div class="message">
+                                <div class="message-header">
+                                    <span class="username">VibeLord</span>
+                                    <span class="timestamp">14:34:01</span>
+                                    <span class="vod-badge">Epic Gaming</span>
+                                </div>
+                                <div class="message-text">the AI gameplay is next level honestly</div>
+                            </div>
+
+                            <div class="message">
+                                <div class="message-header">
+                                    <span class="username">ProPlayer23</span>
+                                    <span class="timestamp">14:35:22</span>
+                                    <span class="vod-badge">Tournament</span>
+                                </div>
+                                <div class="message-text">Switching to Tournament VOD chat now</div>
+                            </div>
+
+                            <div class="message">
+                                <div class="message-header">
+                                    <span class="username">EsportsNerd</span>
+                                    <span class="timestamp">14:36:10</span>
+                                    <span class="vod-badge">Tournament</span>
+                                </div>
+                                <div class="message-text">That final boss fight was insane. Best tournament moment so far</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Sidebar: Stats -->
+                    <div class="stats-panel">
+                        <div class="stat-item">
+                            <div class="stat-label">Total Messages</div>
+                            <div class="stat-value">3.2K</div>
+                        </div>
+
+                        <div class="stat-item">
+                            <div class="stat-label">Unique Chatters</div>
+                            <div class="stat-value">487</div>
+                        </div>
+
+                        <div class="stat-item">
+                            <div class="stat-label">Top Chatter</div>
+                            <div class="stat-value" style="font-size: 1rem; margin-top: 0.5rem;">StreamLegend92</div>
+                            <div class="stat-bar">
+                                <div class="stat-bar-fill" style="width: 100%;"></div>
+                            </div>
+                            <div style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem;">247 messages</div>
+                        </div>
+
+                        <div class="stat-item">
+                            <div class="stat-label">Time Span</div>
+                            <div class="stat-value" style="font-size: 1rem;">2 hours</div>
+                        </div>
+
+                        <div class="stat-item">
+                            <div class="stat-label">Messages/Min</div>
+                            <div class="stat-value">26.7</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isLoggedIn = false;
+
+        function login() {
+            isLoggedIn = true;
+            document.getElementById('loginPage').classList.remove('active');
+            document.getElementById('vodsPage').classList.add('active');
+            document.getElementById('navTabs').style.display = 'flex';
+            document.getElementById('userBadge').style.display = 'flex';
+            document.getElementById('logoutBtn').style.display = 'block';
+            document.getElementById('userName').textContent = 'SampleUser';
+        }
+
+        function switchPage(page) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+            
+            if (page === 'vods') {
+                document.getElementById('vodsPage').classList.add('active');
+            } else {
+                document.getElementById('chatPage').classList.add('active');
+            }
+            event.target.classList.add('active');
+        }
+
+        function toggleVOD(element) {
+            element.classList.toggle('selected');
+            updateSelectedCount();
+        }
+
+        function updateSelectedCount() {
+            const selected = document.querySelectorAll('.vod-card.selected').length;
+            document.getElementById('selectedCount').textContent = selected;
+        }
+
+        function downloadChat() {
+            const selected = document.querySelectorAll('.vod-card.selected').length;
+            if (selected === 0) {
+                alert('Please select at least one VOD');
+                return;
+            }
+            alert(`Downloading chat for ${selected} VOD(s)...`);
+        }
+
+        function refreshVODs() {
+            alert('Refreshing VOD list...');
+        }
+
+        function filterChat(filter) {
+            document.querySelectorAll('.chat-sidebar .filter-item').forEach((item, i) => {
+                if (i === 0 || item.textContent.includes(filter)) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+        }
+
+        function sortChat(sort) {
+            document.querySelectorAll('.chat-sidebar .filter-item').forEach(item => {
+                if (item.textContent.toLowerCase().includes(sort)) {
+                    item.classList.add('active');
+                } else if (item.textContent.includes('Sort By')) {
+                    // Keep sort section
+                } else if (item.classList.contains('active') && item.parentElement.querySelector('.sidebar-title').textContent === 'Sort By') {
+                    item.classList.remove('active');
+                }
+            });
+        }
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            isLoggedIn = false;
+            document.getElementById('loginPage').classList.add('active');
+            document.getElementById('vodsPage').classList.remove('active');
+            document.getElementById('chatPage').classList.remove('active');
+            document.getElementById('navTabs').style.display = 'none';
+            document.getElementById('userBadge').style.display = 'none';
+            document.getElementById('logoutBtn').style.display = 'none';
+        });
+    </script>
+</body>
+</html>
