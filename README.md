@@ -1,4 +1,4 @@
-# VodChatArchive - Twitch VOD Chat Downloader & Archive
+# TwitchChatLogs - Twitch VOD Chat Downloader & Archive
 
 Download, search, and export Twitch chat logs from any streamer's VODs — fully local, no login required.
 
@@ -33,7 +33,7 @@ No Twitch account needed. Just a Twitch developer app (Client ID + Secret).
 1. Go to [dev.twitch.tv/console/apps](https://dev.twitch.tv/console/apps)
 2. Click **Register Your Application**
 3. Fill in:
-   - **Name:** anything (e.g. `VodArchive`)
+   - **Name:** anything
    - **OAuth Redirect URL:** `http://localhost:3001/auth/callback`
    - **Category:** Application Integration
 4. Click **Create**, then **Manage**
