@@ -18,7 +18,8 @@ No Twitch account needed. Just a Twitch developer app (Client ID + Secret).
 
 ## Requirements
 
-- **Node.js** 18 or newer (includes `npm`) — [download](https://nodejs.org/)
+- **Node.js 20 LTS** (includes `npm`) — [download](https://nodejs.org/en/download) 
+  ⚠️ Use Node **20 or 22 LTS**. Node 24 currently has no prebuilt `sqlite3` binary and will fail to install on Windows unless you have Visual Studio C++ build tools.
 - **Git**
 - A **Twitch account** (only to register a dev app — not used for login)
 - ~Disk space for chat logs (SQLite DB grows with each VOD downloaded)
