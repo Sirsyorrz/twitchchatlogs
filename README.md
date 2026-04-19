@@ -1,4 +1,4 @@
-# VodArchive - Twitch VOD Chat Downloader & Archive
+# VodChatArchive - Twitch VOD Chat Downloader & Archive
 
 Download, search, and export Twitch chat logs from any streamer's VODs — fully local, no login required.
 
