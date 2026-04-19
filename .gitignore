@@ -2,6 +2,8 @@ node_modules/
 server/node_modules/
 client/node_modules/
 db.sqlite
+db.sqlite-shm
+db.sqlite-wal
 server/.env
 client/.env.local
 dist/

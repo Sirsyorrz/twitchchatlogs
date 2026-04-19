@@ -16,6 +16,16 @@ No Twitch account needed. Just a Twitch developer app (Client ID + Secret).
 
 ---
 
+## Requirements
+
+- **Node.js** 18 or newer (includes `npm`) — [download](https://nodejs.org/)
+- **Git**
+- A **Twitch account** (only to register a dev app — not used for login)
+- ~Disk space for chat logs (SQLite DB grows with each VOD downloaded)
+- Works on Windows, macOS, and Linux
+
+---
+
 ## Setup
 
 ### 1. Get Twitch Credentials
@@ -34,16 +44,21 @@ No Twitch account needed. Just a Twitch developer app (Client ID + Secret).
 ```bash
 git clone https://github.com/yourusername/twitchchatlogs.git
 cd twitchchatlogs
+npm install
 node setup.js
 ```
 
-The setup script will prompt for your credentials, write both `.env` files, and run `npm install`.
+The setup script prompts for your Client ID + Secret, writes `server/.env` and `client/.env.local`, and installs dependencies for both `server/` and `client/`.
+
+> If `setup.js` doesn't install deps for you, run `npm run install:all` manually.
 
 ### 3. Start
 
 ```bash
 npm run dev
 ```
+
+This launches the Express backend (port **3001**) and the Vite frontend (port **5173**) concurrently.
 
 Open **http://localhost:5173**
 
